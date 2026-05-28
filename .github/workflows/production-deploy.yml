@@ -1,0 +1,64 @@
+name: Production Deploy
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy Tagged Release
+    runs-on: ubuntu-latest
+    environment: production
+    env:
+      CI: "true"
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+
+    steps:
+      - name: Verify Vercel auth env
+        run: |
+          for key in VERCEL_TOKEN VERCEL_ORG_ID VERCEL_PROJECT_ID; do
+            if [ -z "${!key}" ]; then
+              echo "Missing required GitHub environment secret: $key" >&2
+              exit 1
+            fi
+          done
+
+      - name: Extract version from tag
+        id: version
+        run: |
+          TAG="${{ github.event.release.tag_name }}"
+          echo "value=${TAG#{{TAG_PREFIX}}}" >> $GITHUB_OUTPUT
+
+      - name: Checkout release tag
+        uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+          ref: ${{ github.event.release.tag_name }}
+
+      - name: Setup Node
+        uses: actions/setup-node@2028fbc5c25fe9cf00d9f06a71cc4710d4507903
+        with:
+          cache: npm
+          node-version: 24
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Verify package version
+        run: node scripts/ship.mjs verify-package-version --expected "${{ steps.version.outputs.value }}"
+
+      - name: Deploy production
+        run: npx vercel deploy --prod --yes --token="$VERCEL_TOKEN" --build-env SENTRY_RELEASE={{SENTRY_PROJECT}}@${{ github.event.release.tag_name }}

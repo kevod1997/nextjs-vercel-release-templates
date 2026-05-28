@@ -1,0 +1,20 @@
+{
+  "name": "{{PROJECT_SLUG}}",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "init": "node scripts/init-template.mjs",
+    "ship": "node scripts/ship.mjs",
+    "create-secret": "node scripts/create-secret.mjs",
+    "db:prepare:test": "node scripts/ensure-test-db.mjs && node scripts/apply-test-migrations.mjs",
+    "env:check:production": "node scripts/check-runtime-env.mjs --target=production",
+    "env:check:preview": "node scripts/check-runtime-env.mjs --target=preview",
+    "env:check:prod:local": "node scripts/check-runtime-env.mjs --target=production --check-vercel --env-file=.env.production.local",
+    "env:check:preview:local": "node scripts/check-runtime-env.mjs --target=preview --check-vercel --env-file=.env.preview.local"
+  },
+  "dependencies": {
+    "@next/env": "^15.0.0",
+    "pg": "^8.13.0"
+  }
+}
