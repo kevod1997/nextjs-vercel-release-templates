@@ -61,4 +61,9 @@ jobs:
         run: node scripts/ship.mjs verify-package-version --expected "${{ steps.version.outputs.value }}"
 
       - name: Deploy production
-        run: npx vercel deploy --prod --yes --token="$VERCEL_TOKEN" --build-env SENTRY_RELEASE={{SENTRY_PROJECT}}@${{ github.event.release.tag_name }}
+        run: |
+          ARGS=(--prod --yes --token="$VERCEL_TOKEN")
+          # >>> feature:sentry-release
+          ARGS+=(--build-env "SENTRY_RELEASE={{SENTRY_PROJECT}}@${{ github.event.release.tag_name }}")
+          # <<< feature:sentry-release
+          npx vercel deploy "${ARGS[@]}"

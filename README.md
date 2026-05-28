@@ -145,9 +145,44 @@ node scripts/ship.mjs pr --ready  # create or update the PR from the template
 - [ ] Replace `lib/env/runtime.js` with your real schema.
 - [ ] Fill `.env.ci.example` with every required var.
 - [ ] If you don't use Drizzle, replace `scripts/apply-test-migrations.mjs` with your migration tool's reset+apply.
-- [ ] If you don't need encrypted backups, delete `.github/workflows/db-backup.yml`.
 - [ ] In `scripts/lib/release-automation.js`, extend `OBSERVABILITY_PATHS` and `ENV_IMPACT_PATHS` with your project's surfaces.
 - [ ] Adjust `pr-ci.yml`'s Postgres image / version if needed.
+
+## Optional features
+
+The init script asks yes/no for two opt-in features. If you skip the init
+script, here's what each one is and how to remove it manually.
+
+### Sentry release tagging
+
+The production deploy passes `--build-env SENTRY_RELEASE=...` so Sentry can
+attach source maps to the correct release. If you don't use Sentry, delete
+the block in `.github/workflows/production-deploy.yml` between the markers
+`# >>> feature:sentry-release` and `# <<< feature:sentry-release`.
+
+### Nightly Postgres → R2 backup
+
+`.github/workflows/db-backup.yml` runs `pg_dump` every night and uploads the
+dump to Cloudflare R2. If your provider already handles backups (Supabase,
+Neon, RDS automated backups), or you don't use Postgres, just delete that
+file.
+
+### Marker convention (for future opt-outs)
+
+When a feature is small enough to live inside an existing file, it's wrapped
+in a pair of comment markers:
+
+```
+# >>> feature:NAME
+...lines that belong to the feature...
+# <<< feature:NAME
+```
+
+The init script strips the marker lines unconditionally and, if you opted
+out, the inner lines too. The convention works in any file whose comment
+syntax allows `#` on its own line (YAML, shell, Markdown, env files, JS with
+hash-bang at top, etc). For features that own a whole file, no markers are
+needed — the script deletes the file instead.
 
 ## License
 
